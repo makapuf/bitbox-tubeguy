@@ -27,7 +27,7 @@
 #define GRID_W 10 
 #define GRID_H 7
 
-#define FLOW_SPEED 16 // vga frames per flow step
+#define FLOW_SPEED 30 // vga frames per flow step
 #define FLOW_START 10 // seconds before starting 
 
 extern const unsigned char build_cursor_spr[];
