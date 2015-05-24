@@ -346,25 +346,340 @@
 111,43,48
 </data>
  </layer>
- <layer name="nw" width="3" height="3" visible="0">
+ <layer name="ne" width="3" height="3" visible="0">
   <data encoding="csv">
 31,25,96,
 1,49,73,
 1,1,79
 </data>
  </layer>
- <layer name="ne" width="3" height="3">
+ <layer name="ne1" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,26,96,
+1,49,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne2" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,27,96,
+1,49,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne3" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,50,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne4" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,51,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne5" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,52,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne6" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,53,73,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne7" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,53,74,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne8" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,28,96,
+1,53,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne9" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,29,96,
+1,53,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne10" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,53,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne11" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,54,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne12" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,55,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne13" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,56,76,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne14" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,49,77,
+1,1,79
+</data>
+ </layer>
+ <layer name="ne15" width="3" height="3" visible="0">
+  <data encoding="csv">
+31,25,96,
+1,49,78,
+1,1,79
+</data>
+ </layer>
+ <layer name="nw" width="3" height="3" visible="0">
   <data encoding="csv">
 95,25,32,
 57,97,1,
 80,1,1
 </data>
  </layer>
+ <layer name="nw1" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,25,32,
+58,97,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw2" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,25,32,
+59,97,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw3" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,25,32,
+60,98,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw4" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,25,32,
+60,99,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw5" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,25,32,
+60,100,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw6" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,30,32,
+60,101,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw7" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,29,32,
+60,101,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw8" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+60,101,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw9" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+61,101,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw10" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+62,101,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw11" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+57,102,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw12" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+57,103,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw13" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,32,
+57,104,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw14" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,27,32,
+57,97,1,
+80,1,1
+</data>
+ </layer>
+ <layer name="nw15" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,26,32,
+57,97,1,
+80,1,1
+</data>
+ </layer>
  <layer name="se" width="3" height="3" visible="0">
   <data encoding="csv">
-64,1,1,
-57,81,1,
-111,41,48
+1,1,63,
+1,65,73,
+47,41,112
+</data>
+ </layer>
+ <layer name="se1" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,65,73,
+47,46,112
+</data>
+ </layer>
+ <layer name="se2" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,65,73,
+47,46,112
+</data>
+ </layer>
+ <layer name="se3" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,65,73,
+47,45,112
+</data>
+ </layer>
+ <layer name="se4" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,66,73,
+47,44,112
+</data>
+ </layer>
+ <layer name="se5" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,67,73,
+47,44,112
+</data>
+ </layer>
+ <layer name="se6" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,68,73,
+47,44,112
+</data>
+ </layer>
+ <layer name="se7" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,69,74,
+47,44,112
+</data>
+ </layer>
+ <layer name="se8" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,69,76,
+47,44,112
+</data>
+ </layer>
+ <layer name="se9" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,69,76,
+47,43,112
+</data>
+ </layer>
+ <layer name="se10" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,69,76,
+47,42,112
+</data>
+ </layer>
+ <layer name="se11" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,70,76,
+47,41,112
+</data>
+ </layer>
+ <layer name="se12" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,71,76,
+47,41,112
+</data>
+ </layer>
+ <layer name="se13" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,72,76,
+47,41,112
+</data>
+ </layer>
+ <layer name="se14" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,65,77,
+47,41,112
+</data>
+ </layer>
+ <layer name="se15" width="3" height="3" visible="0">
+  <data encoding="csv">
+1,1,63,
+1,65,78,
+47,41,112
 </data>
  </layer>
  <layer name="cross" width="3" height="3" visible="0">
@@ -486,7 +801,7 @@
 111,44,112
 </data>
  </layer>
- <layer name="cross_hori" width="3" height="3">
+ <layer name="cross_hori" width="3" height="3" visible="0">
   <data encoding="csv">
 95,28,96,
 57,37,73,
@@ -577,6 +892,13 @@
 111,44,112
 </data>
  </layer>
+ <layer name="cross_hori13" width="3" height="3" visible="0">
+  <data encoding="csv">
+95,28,96,
+57,37,76,
+111,44,112
+</data>
+ </layer>
  <layer name="cross_hori14" width="3" height="3" visible="0">
   <data encoding="csv">
 95,28,96,
@@ -633,35 +955,35 @@
 202,203,204
 </data>
  </layer>
- <layer name="source" width="3" height="3">
+ <layer name="source" width="3" height="3" visible="0">
   <data encoding="csv">
 65,81,63,
 113,33,73,
 49,97,79
 </data>
  </layer>
- <layer name="source1" width="3" height="3">
+ <layer name="source1" width="3" height="3" visible="0">
   <data encoding="csv">
 65,81,63,
 114,33,73,
 49,97,79
 </data>
  </layer>
- <layer name="source2" width="3" height="3">
+ <layer name="source2" width="3" height="3" visible="0">
   <data encoding="csv">
 66,81,63,
 115,33,73,
 50,97,79
 </data>
  </layer>
- <layer name="source3" width="3" height="3">
+ <layer name="source3" width="3" height="3" visible="0">
   <data encoding="csv">
 68,81,63,
 115,33,73,
 52,97,79
 </data>
  </layer>
- <layer name="source4" width="3" height="3">
+ <layer name="source4" width="3" height="3" visible="0">
   <data encoding="csv">
 69,81,63,
 115,33,73,
@@ -691,9 +1013,9 @@
  </layer>
  <layer name="source8" width="3" height="3" visible="0">
   <data encoding="csv">
-0,0,0,
-0,0,76,
-0,0,0
+69,85,0,
+115,37,76,
+53,101,1
 </data>
  </layer>
 </map>

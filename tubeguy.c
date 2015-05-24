@@ -63,7 +63,7 @@ enum GridElt {
 	TUBE_NS_FIXED, // vertical fixed (cannot be destroyed)
 
 }; 
-#define FULL 32 // add this to the tile ID to mean "full", by example TUBE_EW+FULL is horizontal full. Cross is special cased
+#define FULL 16 // add this to the tile ID to mean "full", by example TUBE_EW+FULL is horizontal full. Cross is special cased
 
 // grid_elt to grid_map 
 // first map if animated
@@ -71,6 +71,7 @@ const uint8_t grid_maps[] = {
 	tubes3_empty,
 	tubes3_explo,
 	tubes3_blocked,
+
 	tubes3_source,
 	tubes3_ns,
 	tubes3_nw,
@@ -83,15 +84,28 @@ const uint8_t grid_maps[] = {
 	tubes3_cross_hori,
 	tubes3_cross_verti,
 	tubes3_ew_fixed,
-	tubes3_ns_fixed
+	tubes3_ns_fixed,
+	// tiles +16 are FULL 
+	0,
+	0,
+	0,
+	0,
+	tubes3_source8,
+	tubes3_ns8,
+	tubes3_nw8,
+	tubes3_ne8,
+	tubes3_ew8,
+	tubes3_se8,
+	tubes3_sw8,
+	tubes3_cross_hori8,
 };
 
 
 // connectivity vectors
 #define NB_CONNECTIVITY 13
 const uint8_t tube_connectivity[NB_CONNECTIVITY][3] = { 
-	// gridelt id , connectivity, grid element when full, XXX tilemap_id (in array of tiles) of 1st frame 
-	{TUBE_SOURCE, C_E, TUBE_SOURCE+FULL},
+	// gridelt id , connectivity, grid element when full
+	{TUBE_SOURCE, C_W|C_E, TUBE_SOURCE+FULL},
 	{TUBE_NS, C_N|C_S, TUBE_NS+FULL}, 
 	{TUBE_NS_FIXED, C_N|C_S, TUBE_NS+FULL}, // cannot be (re)moved but is like a NS
 	{TUBE_EW, C_E|C_W, TUBE_EW+FULL},
@@ -127,7 +141,7 @@ int level; // or menu
 int cursor_x, cursor_y; // on grid.
 
 int flow_x, flow_y, flow_frame; // current flow position & anim frame if flow frame is <0, not started now
-int flow_dir;  // dir : where the flow entered, can be one of C_NSEW. if zero, did not start 
+int flow_dir;  // dir : where the flow entered, can be one of C_NSEW. if zero, did not start.  
 
 int explosion_frame, explosion_x, explosion_y; // explosion frame. <0 means none, position on grid
 object *tmap, *sprite_cursor;
@@ -183,10 +197,11 @@ void enter_level( int next_level)
 				default : grid[i][j]=TUBE_EMPTY; break;
 			}
 
-	cursor_x=0;cursor_y=0;
+	cursor_x=1; cursor_y=0;
 	
-	flow_frame=-60*FLOW_START/FLOW_SPEED; // 8 vga frames per update
-	flow_dir=0; 
+	flow_frame=-60*FLOW_START/FLOW_SPEED; // vga frames per update
+	flow_dir=C_W; // Source connectivity is EW so dir is W
+
 
 	explosion_frame=-1;
 
@@ -287,7 +302,6 @@ void advance_flow(int x,int y, int dir)
 	for (;i<NB_CONNECTIVITY;i++)
 		if ((grid[y][x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & dir)) { // concerned ?
 				// ok move flow there
-				grid[y][x] = tube_connectivity[i][2];
 				flow_x = x;
 				flow_y = y;
 				flow_frame = 0;
@@ -311,24 +325,18 @@ void flow(void)
 	else {
 		if (flow_frame<8) {
 			flow_frame++; // just animate
-		} 
-	}
-		/*else { 
+		} else { 
 			// finish this tile
+			uint8_t out_dir=0; // default = did not find an output 
 			for (int i=0;i<NB_CONNECTIVITY;i++) 
-				if ((grid[flow_y][flow_x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & flow_dir)) 
+				if ((grid[flow_y][flow_x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & flow_dir)) {
 					grid[flow_y][flow_x] = tube_connectivity[i][2];			
-
-			// advance flow to next tile.
-
-			// get output direction if we keep zero, the tile could not out
-			uint8_t out_dir = 0;
-			for (int i=0;i<NB_CONNECTIVITY;i++) 
-				if ((grid[flow_y][flow_x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & flow_dir)) 
 					out_dir = tube_connectivity[i][1]^flow_dir;
+					break;
+				}
 
 			switch (out_dir) {
-				case 0 : 
+				case 0 : // didnt find anything
 					loose();
 					break;
 				case C_N : 
@@ -357,11 +365,9 @@ void flow(void)
 					break;
 			}
 
-			// check out, check if in and then : loose, next; distance, check distance 
-			// special case cross .
 		}
 	}
-	*/
+	
 }
 
 void put_tile(int pos,int gridelt_id, int frame)
@@ -402,9 +408,12 @@ void display(void)
 
 	// numerical values, 1 tile per digit, 0 filled.
 	put_number(pos_time, time, 2);
-	put_number(pos_score, flow_frame>0 ? flow_frame : -flow_frame,6); /// score 
+	put_number(pos_score, score,5); 
 	put_number(pos_lives, lives, 2);
 	put_number(pos_level, level, 2);
+
+	// debug 
+	put_number(pos_score+30, flow_frame>0 ? flow_frame : -flow_frame,3); /// score 
 
 	// animated positionned tiles : explosion, flow, blocks (all), source
 	if ( explosion_frame >=0 ) {
@@ -419,7 +428,7 @@ void display(void)
 
 	// flow - or source !
 	if (flow_frame>=0) {
-		put_tile(pos_grid+flow_y*3*SCREEN_W + flow_x*3, grid[flow_y][flow_x],flow_frame % 8 ); // 2-6 pour source, 0-8 pour le reste
+		put_tile(pos_grid+flow_y*3*SCREEN_W + flow_x*3, grid[flow_y][flow_x],flow_frame ); // 2-6 pour source, 0-8-15 pour le reste selon sens ..
 	} else {
 		put_tile(pos_grid+flow_y*3*SCREEN_W + flow_x*3, grid[flow_y][flow_x],flow_frame % 2 ? 0 : 1 ); // 0 - 1 
 	}
