@@ -143,9 +143,9 @@
 </data>
  </layer>
  <imagelayer name="splash" x="49" y="23" visible="0">
-  <image source="../../../../../../bitbox-projects/tube/splash.png"/>
+  <image source="splash.png"/>
  </imagelayer>
  <imagelayer name="guy" y="215">
-  <image source="../../../../../../bitbox-projects/tube/guy_underwater.png"/>
+  <image source="guy_cry.png"/>
  </imagelayer>
 </map>

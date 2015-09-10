@@ -3,6 +3,8 @@
 /* todo :
 	using mouse ?
 
+	change guy if next tube pos is not ready !
+
 	win/loose anim / sprite
 	intro level / more levels
 	credits ?
@@ -30,8 +32,12 @@
 #include <bitbox.h>
 #include <blitter.h>
 
+#include "sampler.h" // uses sampler	
+
 #include "build/screen3.h"
 #include "build/tubes3.h"
+
+#include "build/binaries.h"
 
 // 400x300 is 50x38 tiles on screen. 
 #define SCREEN_W 64
@@ -48,19 +54,10 @@
 
 enum GuyFrames {guy_blink,  guy_cry,  guy_look,  guy_nice,  guy_normal,  guy_urgh};
 
-extern const unsigned char build_cursor_spr[];
-extern const unsigned char build_logo_spr[];
-extern const unsigned char build_bonh_spr[];
-extern const unsigned char build_splash_spr[];
-extern const unsigned char build_title_spr[];
-
-extern const uint16_t build_screen3_tset[];
-extern const uint8_t build_screen3_tmap[][50*38];
-extern const uint8_t build_tubes3_tmap[][3*3];
-
 enum GameState { State_Logo, State_Intro, State_Level, State_PreLevel, State_PostLevel, State_Pause };
 
 enum Directions {C_E=1, C_W=2, C_S=4, C_N=8};
+
 
 /* possible elements on the grid.
 the grid is an array of logical elements (which will be made of several tiles)
@@ -148,6 +145,9 @@ const uint8_t tube_connectivity[NB_CONNECTIVITY][3] = {
 #define NB_LEVELS 1
 const int level_time[] = {10};
 
+// play a sample at 16kHz
+#define PLAY(sndfile) play_sample((const int8_t *)build_##sndfile##_snd,build_##sndfile##_snd_len,256*11025/BITBOX_SAMPLERATE, -1, 255,255)
+
 // ---------------------------------------------------------------------------------------
 // Globals
 enum GameState game_state = State_Logo;
@@ -178,17 +178,12 @@ char *msg;
 int pos_grid, pos_score, pos_time, pos_next, pos_lives, pos_level, pos_timegraph;
 
 
-enum SFX {
-	SFX_START, SFX_EXPLODE, SFX_PUT, SFX_CANNOTPUT, SFX_START_LIQUID, SFX
-};
 
+extern const int loop_len;
+extern const struct NoteEvent loop[];
 
 // ---------------------------------------------------------------------------------------
 // Code 
-
-
-// XXX
-void sfx(int sfx_id) {} 
 
 
 void enter_level(int mylevel, char * mymsg)
@@ -206,7 +201,7 @@ void enter_level(int mylevel, char * mymsg)
 	}
 
 	// load background (if needed?)
-	tmap_blit(tmap, 0, 0, screen3_header, build_screen3_tmap[screen3_screen]); // unshrink before ? Level ? 
+	tmap_blitlayer(tmap, 0, 0, screen3_header, build_screen3_tmap,screen3_screen); 
 	
 	// scan positions of special tiles & load grid
 	for (int i=0;i<SCREEN_H*SCREEN_W;i++) {		
@@ -240,8 +235,6 @@ void enter_level(int mylevel, char * mymsg)
 
 	explosion_frame=-1;
 
-	sfx(SFX_START);
-
 	// go to prelevel
 
 	msg=mymsg;
@@ -253,17 +246,13 @@ void enter_level(int mylevel, char * mymsg)
 
 }
 
-void static_level()
-{
-	// wait for keypress
-}
 
 
 void put_grid( void )
 // user put tile on grid (from cursor position)
 {
 	grid[cursor_y][cursor_x] = next_tubes[4];
-	sfx(SFX_PUT);
+	PLAY(clang);
 	for (int i=3;i>=0;i--)
 		next_tubes[i+1] = next_tubes[i];
 	// create new one
@@ -275,13 +264,17 @@ void loose(void)
 	// XXX animation on tileset, music
 	// check lives, continues.
 	// if not lives, back to title
+	PLAY(splat);
+
 	sprite_guy->fr=guy_cry;
+	sprite_splash->y=25;
 	enter_level(level,"  000\n  TRY  \n\n AGAIN\n  00");
 }
 
 void win(void) 
 { 
-	// XXX animation on tileset, music
+	// XXX animation on tileset
+	PLAY(welldone);
 	sprite_guy->fr=guy_nice;
 	enter_level(level+1, "  GET\n READY \n\n LEVEL\n  00");
 }
@@ -333,20 +326,18 @@ void user(void) {
 				put_grid(); // put element on grid
 
 				// start explosion
+				PLAY(explosion);
 				explosion_frame = 0;
 				explosion_x = cursor_x;
 				explosion_y = cursor_y;
 
-				sfx(SFX_EXPLODE);
 				break;
 
 			case TUBE_EMPTY : 
 				put_grid(); 
-				sfx(SFX_PUT); 
 				break;
 
 			default : // other : obstacle, source, tube with liquid .. 
-				sfx(SFX_CANNOTPUT);
 				break;
 		}
 	}
@@ -389,7 +380,7 @@ void flow(void)
 		flow_frame++; // not now
 		if (flow_frame==0) // just started flowing now
 			// init flow from source (search in grid)
-			sfx(SFX_START_LIQUID);
+			PLAY(tada);
 	} 
 	else {
 		if (flow_frame<6) {
@@ -439,12 +430,15 @@ void flow(void)
 	
 }
 
-void put_tile(int pos,int gridelt_id, int frame)
+void put_tile(int x,int y ,int gridelt_id, int frame)
 {
+	tmap_blitlayer(tmap,x,y,tubes3_header,build_tubes3_tmap,grid_maps[gridelt_id]+frame);
 	// copy a 3x3 tilemap on screen from 3x3 tilemaps
+	/*
 	for (int i=0;i<3;i++)
 		for (int j=0;j<3;j++)
 			vram[ pos + i + j*SCREEN_W ] = build_tubes3_tmap[grid_maps[gridelt_id]+frame][j*3+i];
+			*/
 }
 
 void put_number(int pos, int n, int digits)
@@ -457,6 +451,9 @@ void put_number(int pos, int n, int digits)
 
 void display(void) 
 {
+	int pos_gridx = pos_grid%SCREEN_W;
+	int pos_gridy = pos_grid/SCREEN_W;
+
 	// grid
 	for (int j=0;j<GRID_H;j++)
 		for (int i=0;i<GRID_W;i++) { 
@@ -465,16 +462,16 @@ void display(void)
 			// animated tiles ?
 			if (c==TUBE_BLOCKED) 
 				frame=(vga_frame/ANIM_SPEED)%4;
-			put_tile(pos_grid+j*3*SCREEN_W + i*3,c,frame); 
+			put_tile(pos_gridx+i*3,pos_gridy+j*3,c,frame); 
 		}
 
 	// next pieces
 	for (int i=0;i<5;i++)
-		put_tile(pos_next+3*i*SCREEN_W, next_tubes[i],0);
+		put_tile(pos_next%SCREEN_W,pos_next/SCREEN_W+3*i, next_tubes[i],0);
 
 	// cursor 
-	sprite_cursor->x = (pos_grid%SCREEN_W + cursor_x*3) *8;
-	sprite_cursor->y = (pos_grid/SCREEN_W + cursor_y*3) *8;
+	sprite_cursor->x = (pos_gridx + cursor_x*3) *8;
+	sprite_cursor->y = (pos_gridy + cursor_y*3) *8;
 	// XXX frame	sprite_cursor->fr = (vga_frame/32)%4;
 
 
@@ -487,7 +484,7 @@ void display(void)
 
 	// explosion
 	if ( explosion_frame >=0 ) {
-		put_tile(pos_grid+explosion_y*3*SCREEN_W + explosion_x*3, TUBE_EXPLOSION,explosion_frame); 
+		put_tile(pos_gridx+explosion_x*3,pos_gridy+explosion_y*3, TUBE_EXPLOSION,explosion_frame); 
 		if (vga_frame%8==0) {
 			if (explosion_frame<3) 
 				explosion_frame++;
@@ -498,11 +495,11 @@ void display(void)
 
 	// flow or source 
 	if (flow_frame>=0) {
-		put_tile(pos_grid+flow_y*3*SCREEN_W + flow_x*3, grid[flow_y][flow_x],flow_frame_base + flow_frame  ); 
+		put_tile(pos_gridx+ flow_x*3,pos_gridy+ flow_y*3, grid[flow_y][flow_x],flow_frame_base + flow_frame  ); 
 
 	} else { // negative : still waiting
 		// make source blink
-		put_tile(pos_grid+flow_y*3*SCREEN_W + flow_x*3, grid[flow_y][flow_x],flow_frame % 2 ? 0 : 1 ); // 0 - 1 
+		put_tile(pos_gridx+ flow_x*3, pos_gridy+flow_y*3, grid[flow_y][flow_x],flow_frame % 2 ? 0 : 1 ); // 0 - 1 
 		// update time graph
 		int nb = -flow_frame*23/(60*FLOW_START/FLOW_SPEED); // XXX compute 23 from pos_timegraph ...
 		for (int i=1;i<nb;i++) 
@@ -511,11 +508,25 @@ void display(void)
 			vram[pos_timegraph+SCREEN_W*i] = screen3_cursor_time+1;
 	}
 
+	// guy face
+	// if normal, from time to time, blink or look at grid
+	switch (sprite_guy->fr) {
+		case guy_normal : 
+			if (vga_frame%64==0 && rand()%3==0)
+				sprite_guy->fr = rand()%2 ? guy_look : guy_blink;
+			break;
+		case guy_look:
+		case guy_blink: 
+			if (vga_frame % 32 == 0)
+				sprite_guy->fr = guy_normal;
+			break;
+	}
+
 	// flow : use grid+flow_frame. as soon as entered, is logically a full one
 }
 
 void game_init() {
-	tmap = tilemap_new (build_screen3_tset,0,0, TMAP_HEADER(SCREEN_W,SCREEN_H,TSET_8,TMAP_U8), vram);
+	tmap = tilemap_new ((uint16_t*)build_screen3_tset,0,0, TMAP_HEADER(SCREEN_W,SCREEN_H,TSET_8,TMAP_U8), vram);
 	sprite_cursor = sprite_new(build_cursor_spr, 0,1000,0);
 	sprite_logo = 	sprite_new(build_logo_spr, 25,-1000,0);
 	sprite_guy = 	sprite_new(build_bonh_spr, 8,1000,0);
@@ -525,7 +536,7 @@ void game_init() {
 }
 
 #define LOGO_TIME (2*60)
-#define PRELEVEL_TIME (60*4)
+#define PRELEVEL_TIME (60*6)
 #define SPLASH_TIME (2*60)
 
 
@@ -560,7 +571,7 @@ void print(char *str)
 			case '\n' : id=0; x=0; y++;   break;
 		}
 		if (id) {
-			tmap_blit(tmap, 15+x*4,13+y*4, tubes3_header, &build_tubes3_tmap[id][0]);
+			tmap_blitlayer(tmap, 15+x*4,13+y*4, tubes3_header, build_tubes3_tmap,id);
 			x++;
 		}
 	}
@@ -570,10 +581,10 @@ void game_frame( void )
 { 	
 	switch(game_state) {
 		case State_Logo : 
-			tmap_blit(tmap, 0, 0, screen3_header, build_screen3_tmap[screen3_logo]);
+			tmap_blitlayer(tmap, 0, 0, screen3_header, build_screen3_tmap,screen3_logo);
 			if (vga_frame<LOGO_TIME)
 				sprite_logo->y = (150-sprite_logo->h/2) + cosf(30.*vga_frame/(float)LOGO_TIME) * (LOGO_TIME-vga_frame)*4;
-			// splash ! 
+			// logo ! 
 			if (vga_frame>=LOGO_TIME*3/2) {
 				blitter_remove(sprite_logo);
 				sprite_logo = sprite_new(build_title_spr, 0,0,0);
@@ -585,11 +596,10 @@ void game_frame( void )
 			break;
 
 		case State_Intro : 
-			// fade in sprite intro using palette
-			// then splash !
-			// press start 
-			if (vga_frame>=SPLASH_TIME) 
+			if (vga_frame==SPLASH_TIME) {
 				sprite_splash->y=25;
+				PLAY(splat);
+			}
 			if (vga_frame>=SPLASH_TIME*2) {
 				blitter_remove(sprite_logo);
 				sprite_splash->y=1000;
@@ -606,9 +616,19 @@ void game_frame( void )
 			} else {
 				print ("     \n       \n\n      \n    ");
 			}
-			if (vga_frame-time_state >= PRELEVEL_TIME) {
+			if (vga_frame-time_state >= PRELEVEL_TIME/3)
+				sprite_splash->y+=2; // hide splash
+
+			if (vga_frame-time_state >= PRELEVEL_TIME) { // now really start the game
 				game_state=State_Level;
 				sprite_guy->fr=guy_normal;
+
+				PLAY(tada);
+
+				play_track (loop_len, 140, loop, 
+					(const int8_t *)build_clang_snd, -1, 
+					build_clang_snd_len,11025);
+
 			}
 
 			break;
@@ -624,5 +644,4 @@ void game_frame( void )
 			break;
 	}
 }
-
 
