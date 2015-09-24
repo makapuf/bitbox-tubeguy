@@ -1,16 +1,15 @@
-// BitTube - Makapuf 2014 for Bitbox - GPLv3
+// BitTube - Makapuf 2015 for Bitbox - GPLv3
 
 /* todo :
-	using mouse ?
+	allow using mouse ?
 
 	change guy if next tube pos is not ready !
+	errors in loop 
 
 	win/loose anim / sprite
 	intro level / more levels
 	credits ?
-	loose life vs level (continue ? non, reprend au niveau)
 
-	intro (+into bitbox : sprite logo rond fade in/out, ...)
 	bonus all squares
 	cursor with the form of the brick (NSEW, 1 color)
 	music / sfx
@@ -20,7 +19,6 @@
 
 	handle tubes cross (&give points)
 
-	gros bonh as sprite + dead / ok 
 	heatshrink tileset / intro sprites vers scratch RAM 32k
 */
 
@@ -179,8 +177,8 @@ int pos_grid, pos_score, pos_time, pos_next, pos_lives, pos_level, pos_timegraph
 
 
 
-extern const int loop_len;
-extern const struct NoteEvent loop[];
+extern const int track_piste_1_1_len;
+extern const struct NoteEvent track_piste_1_1[];
 
 // ---------------------------------------------------------------------------------------
 // Code 
@@ -625,9 +623,9 @@ void game_frame( void )
 
 				PLAY(tada);
 
-				play_track (loop_len, 140, loop, 
+				play_track (track_piste_1_1_len, 140, track_piste_1_1, 
 					(const int8_t *)build_clang_snd, -1, 
-					build_clang_snd_len,11025);
+					build_clang_snd_len,8000);
 
 			}
 
