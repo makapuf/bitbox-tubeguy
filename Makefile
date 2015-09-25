@@ -26,9 +26,9 @@ build/logo.spr: logo2_4col.png
 	@mkdir -p $(dir $@)
 	python $(BITBOX)/scripts/sprite_encode_rle.py $@ $< 
 
-build/cursor.spr: cursor*.png
+build/cursor.spr: cursor0.png cursor1.png cursor2.png cursor3.png
 	@mkdir -p $(dir $@)
-	python $(BITBOX)/scripts/sprite_encode2.py -m p4 $@ $<
+	python $(BITBOX)/scripts/sprite_encode2.py -m p4 $@ $^
 
 build/splash.spr: splash.png
 	@mkdir -p $(dir $@)
@@ -42,4 +42,4 @@ loop_song.c: sounds/loop.mid
 	python $(BITBOX)/scripts/read_midi.py $< > $@
 
 build/%.snd: sounds/%.wav
-	sox $< -t s8 $@
+	sox $< -t s8 -r 11025 $@

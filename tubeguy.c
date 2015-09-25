@@ -144,7 +144,7 @@ const uint8_t tube_connectivity[NB_CONNECTIVITY][3] = {
 const int level_time[] = {10};
 
 // play a sample at 16kHz
-#define PLAY(sndfile) play_sample((const int8_t *)build_##sndfile##_snd,build_##sndfile##_snd_len,256*11025/BITBOX_SAMPLERATE, -1, 255,255)
+#define PLAY(sndfile) play_sample((const int8_t *)build_##sndfile##_snd,build_##sndfile##_snd_len,256*11025/BITBOX_SAMPLERATE, -1, 120,120)
 
 // ---------------------------------------------------------------------------------------
 // Globals
@@ -446,7 +446,7 @@ void put_number(int pos, int n, int digits)
 		n/=10;
 	}
 }
-
+const uint8_t cursor_frames[8] = {0,1,2,3,3,2,1,0};
 void display(void) 
 {
 	int pos_gridx = pos_grid%SCREEN_W;
@@ -470,7 +470,7 @@ void display(void)
 	// cursor 
 	sprite_cursor->x = (pos_gridx + cursor_x*3) *8;
 	sprite_cursor->y = (pos_gridy + cursor_y*3) *8;
-	// XXX frame	sprite_cursor->fr = (vga_frame/32)%4;
+	sprite_cursor->fr = cursor_frames[(vga_frame/8)%8];
 
 
 	// numerical values, 1 tile per digit, 0 filled.
