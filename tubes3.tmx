@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.0" orientation="orthogonal" renderorder="right-down" width="3" height="3" tilewidth="8" tileheight="8" nextobjectid="1">
- <tileset firstgid="1" name="tiles3" tilewidth="8" tileheight="8">
+ <tileset firstgid="1" name="tiles3" tilewidth="8" tileheight="8" tilecount="256">
   <image source="tiles3.png" width="128" height="128"/>
   <tile id="116">
    <properties>
@@ -13,28 +13,28 @@
    </properties>
   </tile>
  </tileset>
- <layer name="ns_fixed" width="3" height="3">
+ <layer name="ns_fixed" width="3" height="3" visible="0">
   <data encoding="csv">
 31,25,32,
 106,33,106,
 47,41,48
 </data>
  </layer>
- <layer name="ns_fixed_anim1" width="3" height="3">
+ <layer name="ns_fixed_anim1" width="3" height="3" visible="0">
   <data encoding="csv">
 31,25,32,
 107,33,107,
 47,41,48
 </data>
  </layer>
- <layer name="ns_fixed_anim2" width="3" height="3">
+ <layer name="ns_fixed_anim2" width="3" height="3" visible="0">
   <data encoding="csv">
 31,25,32,
 123,33,123,
 47,41,48
 </data>
  </layer>
- <layer name="ns_fixed_anim3" width="3" height="3">
+ <layer name="ns_fixed_anim3" width="3" height="3" visible="0">
   <data encoding="csv">
 31,25,32,
 122,33,122,
@@ -1175,7 +1175,7 @@
 1,1,1
 </data>
  </layer>
- <layer name="blocked" width="3" height="3" visible="0">
+ <layer name="blocked" width="3" height="3">
   <data encoding="csv">
 92,93,94,
 108,106,110,
@@ -1231,7 +1231,7 @@
 202,203,204
 </data>
  </layer>
- <layer name="source" width="3" height="3" visible="0">
+ <layer name="source" width="3" height="3">
   <data encoding="csv">
 65,81,63,
 113,33,73,
@@ -1424,7 +1424,7 @@
   <data encoding="csv">
 33,1,33,
 33,1,33,
-49,17,33
+49,17,97
 </data>
  </layer>
  <layer name="letterI" width="3" height="3" visible="0">
@@ -1444,7 +1444,7 @@
  <layer name="space" width="3" height="3" visible="0">
   <data encoding="csv">
 1,1,1,
-105,1,1,
+1,1,1,
 1,1,1
 </data>
  </layer>
