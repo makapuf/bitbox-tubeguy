@@ -30,9 +30,9 @@
 #include <string.h>
 
 #include <bitbox.h>
-#include <blitter.h>
 
-#include "sampler.h" // uses sampler
+#include "lib/blitter/blitter.h"
+#include "lib/sampler/sampler.h" 
 
 #include "build/screen3.h"
 #include "build/tubes3.h"
@@ -306,8 +306,6 @@ void user(void) {
 	static uint16_t old_gamepad;
 	uint16_t gamepad_pressed;
 	static int moved;
-
-	kbd_emulate_gamepad();
 
 	gamepad_pressed = gamepad_buttons[0] & ~old_gamepad;
 
