@@ -1,4 +1,4 @@
-#include "sampler.h"
+#include "lib/sampler/sampler.h"
 // file  sounds/loop.mid
 // 2 tracks, 960 ticks/beat (PPQ)
 // Track name : intro-Piste_1-1
