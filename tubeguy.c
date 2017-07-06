@@ -1,8 +1,6 @@
-// BitTube - Makapuf 2015 for Bitbox - GPLv3
+// BitTube - Makapuf 2015-2017 for Bitbox - GPLv3
 
 /* todo :
-	allow using mouse ?
-
 	change guy if next tube pos is not ready !
 
 	win/loose anim / sprite
@@ -20,7 +18,6 @@
 	one ways, set flow slow/fast, teleports
 
 	handle tubes cross (&give points)
-
 */
 
 
@@ -35,8 +32,6 @@
 #include "lib/sampler/sampler.h" 
 
 #include "build/screen3.h"
-#include "build/tubes3.h"
-#include "build/levels.h"
 
 #include "build/binaries.h"
 
@@ -48,103 +43,45 @@
 #define GRID_W 10
 #define GRID_H 7
 
-#define FLOW_SPEED 30 // vga frames per flow step
-#define FLOW_START 10 // seconds before starting flow
-
 #define ANIM_SPEED 16
 
-enum GuyFrames {guy_blink,  guy_cry,  guy_look,  guy_nice,  guy_normal,  guy_urgh};
 
-enum GameState { State_Logo, State_Intro, State_Level, State_PreLevel, State_PostLevel, State_Pause };
+struct FlowTransition {
+	uint8_t start_frame; // frame this transition applies to (no flow)
+	uint8_t src_dir;     // source direction
+	uint8_t dest_dir;    // target direction
+	uint8_t start_anim;  // start frame of animation
+	uint8_t end_anim;    // end frame of animation
+};
+
+struct LevelProperty {
+	uint8_t flow_speed;   // speed of flow in vga frames per flow step
+	uint8_t flow_start;   // time before flow starts
+	uint8_t steps_needed; // minimum steps before level ends
+};
+
+
+enum GuyFrames {
+	guy_blink,  
+	guy_cry,  
+	guy_look,  
+	guy_nice,  
+	guy_normal,  
+	guy_urgh
+};
+
+enum GameState { 
+	State_Logo, 
+	State_Intro, 
+	State_Level, 
+	State_PreLevel, 
+	State_PostLevel, 
+	State_Pause 
+};
 
 enum Directions {C_E=1, C_W=2, C_S=4, C_N=8};
 
-
-/* possible elements on the grid.
-the grid is an array of logical elements (which will be made of several tiles)
-
- */
-enum GridElt {
-	TUBE_EMPTY,
-	TUBE_EXPLOSION,
-	TUBE_BLOCKED, // prevents putting pipes there. Globally animated.
-
-	// Can be filled. Fulls : add +FULL to the IDs
-	TUBE_SOURCE,
-	TUBE_NS,
-	TUBE_NW,
-	TUBE_NE,
-	TUBE_EW,
-	TUBE_SE,
-	TUBE_SW,
-
-	TUBE_CROSS, // empty cross
-	TUBE_CROSS_HORIZONTAL, // cross _already filled vertically_
-	TUBE_CROSS_VERTICAL,
-	TUBE_EW_FIXED, // horizontal fixed (cannot be destroyed)
-	TUBE_NS_FIXED, // vertical fixed (cannot be destroyed)
-
-};
-#define FULL 16 // add this to the tile ID to mean "full", by example TUBE_EW+FULL is horizontal full. Cross is special cased
-
-// grid_elt to grid_map
-// first map if animated
-const uint8_t grid_maps[] = {
-	tubes3_empty,
-	tubes3_explo,
-	tubes3_blocked,
-
-	tubes3_source,
-	tubes3_ns,
-	tubes3_nw,
-	tubes3_ne,
-	tubes3_ew,
-	tubes3_se,
-	tubes3_sw,
-
-	tubes3_cross,
-	tubes3_cross_hori,
-	tubes3_cross_verti,
-	tubes3_ew_fixed,
-	tubes3_ns_fixed,
-	// tiles +16 are FULL
-	0,
-	0,
-	0,
-	0,
-	tubes3_source8,
-	tubes3_ns8,
-	tubes3_nw8,
-	tubes3_ne8,
-	tubes3_ew8,
-	tubes3_se8,
-	tubes3_sw8,
-	tubes3_cross_hori8,
-};
-
-
-// connectivity vectors
-#define NB_CONNECTIVITY 13
-const uint8_t tube_connectivity[NB_CONNECTIVITY][3] = {
-	// gridelt id , connectivity, grid element when full
-	{TUBE_SOURCE, C_W|C_E, TUBE_SOURCE+FULL},
-	{TUBE_NS, C_N|C_S, TUBE_NS+FULL},
-	{TUBE_NS_FIXED, C_N|C_S, TUBE_NS+FULL}, // cannot be (re)moved but is like a NS
-	{TUBE_EW, C_E|C_W, TUBE_EW+FULL},
-	{TUBE_EW_FIXED, C_E|C_W, TUBE_EW+FULL },
-	{TUBE_SE, C_S|C_E, TUBE_SE+FULL},
-	{TUBE_SW, C_S|C_W, TUBE_SW+FULL},
-	{TUBE_NW, C_N|C_W, TUBE_NW+FULL},
-	{TUBE_NE, C_N|C_E, TUBE_NE+FULL},
-	// Cross : special case
-	{TUBE_CROSS, C_N|C_S, TUBE_CROSS_VERTICAL},
-	{TUBE_CROSS, C_W|C_E, TUBE_CROSS_HORIZONTAL},
-	{TUBE_CROSS_VERTICAL, C_S|C_N, TUBE_CROSS+FULL},
-	{TUBE_CROSS_HORIZONTAL, C_W|C_E, TUBE_CROSS+FULL},
-};
-
-#define NB_LEVELS 4
-const int level_length[] = {10,15,15,15};
+#include "tubes.h"
 
 // play a sample at 16kHz
 #define PLAY(sndfile) play_sample((const int8_t *)build_##sndfile##_snd,build_##sndfile##_snd_len,256*11025/BITBOX_SAMPLERATE, -1, 120,120)
@@ -161,15 +98,15 @@ int lives;
 uint8_t vram[SCREEN_W*SCREEN_H]; // graphical tilemap, in RAM.
 // the grid is the logical state of the map, made of grid elements.
 // It's not the tilemap, which is its graphical representation (+animation state, borders ...)
-uint8_t grid[GRID_H][GRID_W];
-uint8_t next_tubes[5] = { TUBE_SW, TUBE_NW, TUBE_NE, TUBE_EW, TUBE_SE }; // next incoming tubes, as grid elements.
+uint8_t grid[GRID_H][GRID_W]; // grid is filled with tile ids
+
+uint8_t next_tubes[5]; // next incoming tubes, as grid elements.
 
 int level; // or menu
 int cursor_x, cursor_y; // on grid.
 
 int flow_x, flow_y, flow_frame; // current flow position & anim frame if flow frame is <0, not started now
-int flow_dir;  // dir : where the flow entered, can be one of C_NSEW. if zero, did not start.
-int flow_frame_base; // in the current flow steps, which is the one (depends on direction)
+uint8_t flow_transition;  // index of flowtransitions currently taken
 
 int explosion_frame, explosion_x, explosion_y; // explosion frame. <0 means none, position on grid
 object *tmap, *sprite_cursor, *sprite_logo, *sprite_guy, *sprite_splash;
@@ -178,7 +115,15 @@ char msg[50];
 // positions of elements (grid, score, .. ) on screen in tiles : defined in TMX as(special tiles on background tilemap / tiles ?), computed on load.
 int pos_grid, pos_score, pos_time, pos_next, pos_lives, pos_level, pos_timegraph;
 
-
+const uint8_t placeable_tiles[] = {
+	TUBE_EW_CROSS,
+	TUBE_SW,
+	TUBE_NE,
+	TUBE_EW,
+	TUBE_NS,
+	TUBE_SE,
+	TUBE_NW,
+};
 
 extern const int track_piste_1_1_len;
 extern const struct NoteEvent track_piste_1_1[];
@@ -189,7 +134,6 @@ extern const struct NoteEvent track_piste_1_1[];
 
 void enter_level(int mylevel, char * mymsg)
 // Will in fact put the game in pre level - that will enter the level afterwards
-
 {
 
 	if (mylevel>=NB_LEVELS || mylevel <0) {
@@ -197,11 +141,6 @@ void enter_level(int mylevel, char * mymsg)
 		level = NB_LEVELS-1;
 	} else {
 		level=mylevel;
-	}
-
-	if (level==0) {
-		// game start
-		score=0; lives=3;
 	}
 
 	// load background (if needed?)
@@ -220,48 +159,48 @@ void enter_level(int mylevel, char * mymsg)
 		}
 	}
 
-	// load initial grid from level, at center of 3x3 tile
+	if (level==0) {
+		// game start
+		score=0; lives=3;
+	}
+
+	// init next tubes
+	for (int i=0;i<5;i++)
+		next_tubes[i] = placeable_tiles[rand()%7];
+
+	// load initial grid from level
 	for (int i=0;i<GRID_H;i++) {
 		for (int j=0;j<GRID_W;j++) {
-			switch(build_levels_tmap[(level*GRID_H+i)*GRID_W+j]) {
-				case screen3_source :
-					grid[i][j]=TUBE_SOURCE;
-					flow_x=j;flow_y=i;
-					break;
-				case screen3_block  :
-					grid[i][j]=TUBE_BLOCKED;
-					break;
-				// XXX add screen3_fixed_ns &co
-				default :
-					grid[i][j]=TUBE_EMPTY;
-					break;
+			grid [i][j] = level_map[level][i*GRID_W+j];
+			if (grid[i][j] == TUBE_WE_SOURCE) {// found source
+				flow_frame=-60*level_properties[level].flow_start/level_properties[level].flow_speed; // vga frames per update
+				flow_transition=SOURCE_TRANSITION; 
+				flow_x = j;
+				flow_y = i;
 			}
 		}
 	}
 
-	cursor_x=1; cursor_y=0;
+	cursor_x=0; cursor_y=0;
 
-	flow_frame=-60*FLOW_START/FLOW_SPEED; // vga frames per update
-	flow_dir=C_W; // Source connectivity is EW so dir is W
-	flow_frame_base=2; // after 2 frames on/off
+
 
 	sprite_guy->y=14; // show him, wheterver frame he was (win, loose, ...)
 
 	explosion_frame=-1;
 
 	strcpy(msg,mymsg);
+
+	// adds level number
 	strcat(msg,"\n  00");
 	int n=strlen(msg);
 	msg[n-1]+=level%10;
 	msg[n-2]+=level/10;
 
-
 	time_state = vga_frame;
 	game_state = State_PreLevel;
 
-	flow_length = level_length[level];
-
-
+	flow_length = level_properties[level].steps_needed;
 }
 
 
@@ -269,12 +208,14 @@ void enter_level(int mylevel, char * mymsg)
 void put_grid( void )
 // user put tile on grid (from cursor position)
 {
+	//message("place %d at %d,%d\n", next_tubes[4],cursor_x, cursor_y);
 	grid[cursor_y][cursor_x] = next_tubes[4];
 	PLAY(clang);
+
+	// place new one in the queue
 	for (int i=3;i>=0;i--)
 		next_tubes[i+1] = next_tubes[i];
-	// create new one
-	next_tubes[0] = (rand()%7) + TUBE_NS ;
+	next_tubes[0] = placeable_tiles[rand()%7 ];
 }
 
 void loose(void)
@@ -331,14 +272,14 @@ void user(void) {
 	if ( gamepad_pressed & gamepad_A && explosion_frame <0 && !(cursor_x==flow_x && cursor_y==flow_y)) {
 		switch (grid[cursor_y][cursor_x]) {
 
-			// existing, empty pipes.
+			// destroyable pipes
 			case TUBE_NS :
 			case TUBE_EW :
 			case TUBE_SE :
 			case TUBE_SW :
 			case TUBE_NW :
 			case TUBE_NE :
-			case TUBE_CROSS :
+			case TUBE_EW_CROSS :
 				put_grid(); // put element on grid
 
 				// start explosion
@@ -371,90 +312,77 @@ void advance_flow(int x,int y, int dir)
 		return;
 	}
 
-	// search tube
-	int i=0;
-	for (;i<NB_CONNECTIVITY;i++)
-		if ((grid[y][x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & dir)) { // concerned ?
-				// ok move flow there
+	//message("adv flow to %d %d dir %d \n",x,y,dir);
+	// search suitable tube connectivity. 
+	int i;
+	for (i=0;i<NB_TRANSITIONS;i++) {
+		//message("test flow trans %d - %d ?? %d \n",i,flow_transitions[i].start_frame,grid[y][x] );
+		if ((grid[y][x] == flow_transitions[i].start_frame) && \
+		    (flow_transitions[i].src_dir == dir)) { // concerned ?
+				// ok can move flow there
 				flow_x = x;
 				flow_y = y;
 				flow_frame = 0;
-				flow_dir = dir;
-				// if first of the two letters, 1st frames, else 8 last ones.
-				flow_frame_base = dir < (tube_connectivity[i][1]^dir) ? 1 : 8;
+				flow_transition = i;
 				break;
 			}
+	}
 
-	if (i==NB_CONNECTIVITY) // did not find it ie the current tile
+	if (i==NB_TRANSITIONS) // did not find it ie the current tile
 		loose();
 }
 
 void flow(void)
 // make the liquid flow
 {
+	// flow did not start
 	if (flow_frame<0) {
 		flow_frame++; // not now
 		if (flow_frame==0) // just started flowing now
 			// init flow from source (search in grid)
 			PLAY(tada);
-	}
-	else {
-		if (flow_frame<6) {
-			flow_frame++; // just animate
-		} else {
-			// finish this tile
-			uint8_t out_dir=0; // default = did not find an output
-			for (int i=0;i<NB_CONNECTIVITY;i++)
-				if ((grid[flow_y][flow_x] == tube_connectivity[i][0]) && (tube_connectivity[i][1] & flow_dir)) {
-					grid[flow_y][flow_x] = tube_connectivity[i][2];
-					out_dir = tube_connectivity[i][1]^flow_dir;
-					break;
-				}
-
-			switch (out_dir) {
-				case 0 : // didnt find anything
+	} else if (flow_frame<5) {
+		flow_frame++; // just animate
+	} else {
+		// finish this tile
+		grid[flow_y][flow_x] = flow_transitions[flow_transition].end_anim;
+		// advance flow
+		switch (flow_transitions[flow_transition].dest_dir) {
+			case C_N :
+				if (flow_y>0) // case rollbacks ?
+					advance_flow(flow_x, flow_y-1, C_S);
+				else
 					loose();
-					break;
-				case C_N :
-					if (flow_y>0)
-						advance_flow(flow_x, flow_y-1, C_S);
-					else
-						loose();
-					break;
-				case C_S :
-					if (flow_y<7)
-						advance_flow(flow_x, flow_y+1, C_N);
-					else
-						loose();
-					break;
-				case C_W :
-					if (flow_x>0)
-						advance_flow(flow_x-1, flow_y, C_E);
-					else
-						loose();
-					break;
-				case C_E :
-					if (flow_x<9)
-						advance_flow(flow_x+1, flow_y, C_W);
-					else
-						loose();
-					break;
-			}
-
+				break;
+			case C_S :
+				if (flow_y<7)
+					advance_flow(flow_x, flow_y+1, C_N);
+				else
+					loose();
+				break;
+			case C_W :
+				if (flow_x>0)
+					advance_flow(flow_x-1, flow_y, C_E);
+				else
+					loose();
+				break;
+			case C_E :
+				if (flow_x<9)
+					advance_flow(flow_x+1, flow_y, C_W);
+				else
+					loose();
+				break;
 		}
 	}
-
 }
 
-void put_tile(int x,int y ,int gridelt_id, int frame)
+// copy a 3x3 tilemap on screen from 3x3 tilemaps
+// x and y are on vram, not grid
+void put_tile(int x, int y, int gridelt_id)
 {
-	tmap_blitlayer(tmap,x,y,tubes3_header,build_tubes3_tmap,grid_maps[gridelt_id]+frame);
-	// copy a 3x3 tilemap on screen from 3x3 tilemaps
-	/*
 	for (int i=0;i<3;i++)
 		for (int j=0;j<3;j++)
-			vram[ pos + i + j*SCREEN_W ] = build_tubes3_tmap[grid_maps[gridelt_id]+frame][j*3+i];
-			*/
+			vram[ x + j + (y+i)*SCREEN_W ] = tiles[gridelt_id][i*3+j];
 }
 
 void put_number(int pos, int n, int digits)
@@ -464,7 +392,9 @@ void put_number(int pos, int n, int digits)
 		n/=10;
 	}
 }
+
 const uint8_t cursor_frames[8] = {0,1,2,3,3,2,1,0};
+
 void display(void)
 {
 	int pos_gridx = pos_grid%SCREEN_W;
@@ -475,15 +405,20 @@ void display(void)
 		for (int i=0;i<GRID_W;i++) {
 			int c=grid[j][i];
 			int frame=0;
+
 			// animated tiles ?
 			if (c==TUBE_BLOCKED)
 				frame=(vga_frame/ANIM_SPEED)%4;
-			put_tile(pos_gridx+i*3,pos_gridy+j*3,c,frame);
+			put_tile(pos_gridx+i*3,pos_gridy+j*3,c+frame);
 		}
 
 	// next pieces
 	for (int i=0;i<5;i++)
-		put_tile(pos_next%SCREEN_W,pos_next/SCREEN_W+3*i, next_tubes[i],0);
+		put_tile(	
+			pos_next%SCREEN_W,
+			pos_next/SCREEN_W+3*i,
+			next_tubes[i]
+			);
 
 	// cursor
 	sprite_cursor->x = (pos_gridx + cursor_x*3) *8;
@@ -497,10 +432,13 @@ void display(void)
 	put_number(pos_lives, lives, 2);
 	put_number(pos_level, level, 2);
 
-
 	// explosion
 	if ( explosion_frame >=0 ) {
-		put_tile(pos_gridx+explosion_x*3,pos_gridy+explosion_y*3, TUBE_EXPLOSION,explosion_frame);
+		put_tile(
+			pos_gridx+explosion_x*3,pos_gridy+explosion_y*3,
+			TUBE_EXPLO + explosion_frame
+			);
+
 		if (vga_frame%8==0) {
 			if (explosion_frame<3)
 				explosion_frame++;
@@ -509,17 +447,24 @@ void display(void)
 		}
 	}
 
-	// flow or source
+	// flow / source
 	if (flow_frame>=0) {
-		put_tile(pos_gridx+ flow_x*3,pos_gridy+ flow_y*3, grid[flow_y][flow_x],flow_frame_base + flow_frame  );
-
+		put_tile (
+			pos_gridx+ flow_x*3,
+			pos_gridy+ flow_y*3, 
+			flow_transitions[flow_transition].start_anim + flow_frame
+		);
 	} else { // negative : still waiting
 		// make source blink
-		put_tile(pos_gridx+ flow_x*3, pos_gridy+flow_y*3, grid[flow_y][flow_x],flow_frame % 2 ? 0 : 1 );
+		put_tile(
+			pos_gridx+ flow_x*3, 
+			pos_gridy+ flow_y*3,
+			TUBE_WE_SOURCE + (flow_frame % 2 ? 1 : 0)
+			);
 
 		// update time graph
 		const int nblines = SCREEN_H - pos_timegraph/SCREEN_W;
-		int nb = -flow_frame*nblines/(60*FLOW_START/FLOW_SPEED);
+		int nb = -flow_frame*nblines/(60*level_properties[level].flow_start/level_properties[level].flow_speed);
 		for (int i=1;i<nb-2;i++)
 			vram[pos_timegraph+SCREEN_W*i] = screen3_cursor_time;
 		for (int i=nb;i<nblines;i++) {
@@ -561,37 +506,15 @@ void game_init() {
 
 void print(char *str)
 {
-	int id=0,x=0,y=0;
+	int x=0,y=0;
 	char c;
 	while ((c=*str++)) {
 		switch(c) {
-			case '0' : id = tubes3_number0;break;
-			case '1' : id = tubes3_number1;break;
-			case '2' : id = tubes3_number2;break;
-			case '3' : id = tubes3_number3;break;
-			case '4' : id = tubes3_number4;break;
-			case '5' : id = tubes3_number5;break;
-			case '6' : id = tubes3_number6;break;
-			case '7' : id = tubes3_number7;break;
-			case '8' : id = tubes3_number8;break;
-			case '9' : id = tubes3_number9;break;
-			case 'A' : id = tubes3_letterA;break;
-			case 'D' : id = tubes3_letterD;break;
-			case 'I' : id = tubes3_letterI;break;
-			case 'E' : id = tubes3_letterE;break;
-			case 'L' : id = tubes3_letterL;break;
-			case 'N' : id = tubes3_letterN;break;
-			case 'G' : id = tubes3_letterG;break;
-			case 'R' : id = tubes3_letterR;break;
-			case 'T' : id = tubes3_letterT;break;
-			case 'V' : id = tubes3_letterV;break;
-			case 'Y' : id = tubes3_letterY;break;
-			case '\n': id=0; x=0; y++;   break;
-			case ' ' : id = 0;x++;  break;
-		}
-		if (id) {
-			tmap_blitlayer(tmap, 15+x*4,13+y*4, tubes3_header, build_tubes3_tmap,id);
-			x++;
+			case '\n': x=0; y++;   break;
+			default: 
+				put_tile(15+x*4, 13+y*4, chars_maps[c-' ']);
+				x++;
+				break;
 		}
 	}
 }
@@ -654,7 +577,7 @@ void game_frame( void )
 
 		case State_Level :
 			if ((vga_frame & 3 ) == 0 ) user();
-			if ((vga_frame % FLOW_SPEED ) == 0 ) flow();
+			if ((vga_frame % level_properties[level].flow_speed ) == 0 ) flow();
 			display();
 			break;
 
